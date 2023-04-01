@@ -13,7 +13,6 @@ PRELOAD_BUF = buf
 # important data
 # this takes my uid
 
-
 _UID = buf["UID"]
 CID = buf["CLIENTID"]
 CSECRET = buf["CLIENTSECRET"]
@@ -285,8 +284,7 @@ def refresh_token_validity():
     # reset variables
     global ACCESSTOKEN
     ACCESSTOKEN = new_data["ACCESSTOKEN"]
-    with open("secret", "w") as f:
-        json.dump(new_data, f, indent=4)
+    save_data()
     HEADERS["Authorization"] = f"Bearer {ACCESSTOKEN}"
     print("Token Refreshed")
 
@@ -403,7 +401,7 @@ else:
             if i == "a":
                 raise InterruptedError("add account")
             choice = int(i) - 1
-            if choice < 1 or choice > len(_names):
+            if choice < 0 or choice >= len(_names):
                 raise ValueError
             break
         except ValueError:
@@ -428,5 +426,6 @@ else:
             # get the choice number
             choice = len(_UID) - 1
             break
-    print(_names, choice)
+    # print(_names, choice)
+    print("Using: ", _names[choice])
     UID = _names[choice]

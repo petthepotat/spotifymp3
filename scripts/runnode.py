@@ -30,10 +30,15 @@ async function download_audio(link, title, download_path) {
     // console.log(`LOG|${link}`)
     var path = download_path + "/" + title + ".mp3";
     // create stream object
-    let stream = ytdl(link, {
+    const filters = {
         filter: "audioonly",
         quality: "highestaudio",
-    });
+    };
+    // let stream = ytdl(link, {
+    //    filter: "audioonly",
+    //    quality: "highestaudio",
+    // });
+    let stream = ytdl(link, filters);
 
     // download
     console.log(`START|${title}`);
