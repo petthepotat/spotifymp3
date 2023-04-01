@@ -9,7 +9,8 @@ import time
 # ------------------------------- #
 # script
 
-SCRIPT = """const ytdl = require("ytdl-core");
+SCRIPT = """
+const ytdl = require("ytdl-core");
 const fs = require("fs");
 const ytsa = require('youtube-search-api');
 
@@ -42,7 +43,7 @@ async function download_audio(link, title, download_path) {
     //     console.log(`UPDATE|${title}|${(percent * 100).toFixed(2)}%`);
     //     // new Promise((resolve) => { setTimeout(() => {}, 100); });
     // });
-    stream.on('finish', () => {
+    await stream.on('finish', () => {
         console.log(`FINISHED|${title}`);
     });
 }
@@ -85,8 +86,9 @@ def download_songs(songs: List[str], path: str = "assets"):
 
     # get links for videos -- to collect songs
     print("=== collecting data from youtube ===")
-    custom_vars = [path] + \
-        [utils.remove_illegal_file_chars(str(name)) for name in songs]
+    custom_vars = [path] + [
+        utils.remove_illegal_file_chars(str(name)) for name in songs
+    ]
 
     # print(custom_vars)
     print("=== start downloading ===")

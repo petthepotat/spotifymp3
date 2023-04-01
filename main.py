@@ -25,3 +25,6 @@ while True:
     # done
     print("Done downloading songs!")
     print("--" * 20)
+
+# exit
+spotifyapi.exit()

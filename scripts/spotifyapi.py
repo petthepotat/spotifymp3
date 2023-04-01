@@ -3,11 +3,18 @@ import requests
 import json
 import base64
 
-buf = json.load(open("secret", "r"))
+from scripts.static import SECRET_FILE
+
+raw = open(SECRET_FILE, "r").read()
+buf = json.loads(base64.b64decode(raw).decode("utf-8"))
+# buf = json.load(open(SECRET_FILE, "r"))
 PRELOAD_BUF = buf
 
 # important data
-UID = buf["UID"]
+# this takes my uid
+
+
+_UID = buf["UID"]
 CID = buf["CLIENTID"]
 CSECRET = buf["CLIENTSECRET"]
 REFRESHTOKEN = buf["REFRESHTOKEN"]
@@ -22,9 +29,21 @@ HEADERS = {
 }
 REDIRECT = "https://localhost"
 
-
 # ------------------------------- #
 # classes
+
+
+class User:
+    def __init__(self, uri: str, data: dict):
+        self.uri = uri
+        self.data = data
+        # stats
+        self.followers = data["followers"]["total"]
+        self.href = data["href"]
+        self.name = data["display_name"]
+
+    def __str__(self):
+        return self.data["display_name"]
 
 
 class Playlist:
@@ -314,3 +333,100 @@ def create_playlist(name: str, des: str, public: bool = True):
         res = requests.post(route, data=json.dumps(data), headers=HEADERS)
     pid = res.json()["id"]
     return Playlist("https://api.spotify.com/v1/playlists/" + pid)
+
+
+def get_user_info(user_id: str):
+    """Get user info"""
+    target = f"https://api.spotify.com/v1/users/{user_id}"
+    res = requests.get(target, headers=HEADERS)
+    if res.status_code != 200:
+        refresh_token_validity()
+        res = requests.get(target, headers=HEADERS)
+    # print(res.text)
+    return User(user_id, res.json())
+
+
+# ------------------------------- #
+
+
+def save_data():
+    global _UID, CID, CSECRET, REFRESHTOKEN, ACCESSTOKEN, HEADERS
+    result = {
+        "UID": _UID,
+        "CLIENTID": CID,
+        "CLIENTSECRET": CSECRET,
+        "REFRESHTOKEN": REFRESHTOKEN,
+        "ACCESSTOKEN": ACCESSTOKEN,
+    }
+    # save to file - secret
+    with open(SECRET_FILE, "w") as f:
+        # bs4 encode string
+        result = base64.b64encode(json.dumps(result).encode("ascii")).decode("ascii")
+        f.write(result)
+
+
+def exit():
+    """Exit the program"""
+    save_data()
+
+
+# ------------------------------- #
+# starting
+
+# https://open.spotify.com/user/ivh5jy0syljs6hc097zn62iw9?si=5b8d30c6051349c8
+# https://open.spotify.com/playlist/0VHIrQ9JSopZQtWsNG1ZWk?si=45bb7f55eaa148be
+
+if not _UID:
+    # ask user for uid
+    print("You have yet to login to this app!")
+    # add account
+    uri = input("please input a link to your spotify account: ")
+    uid = uri.split("/")[-1].split("?")[0]
+    # use spotifyapi to find user name
+    name = get_user_info(uid).name
+    # save
+    _UID[name] = uid
+    UID = uid
+    print("-" * 30)
+else:
+    # let user select account
+    print("You have logged in to this app before!")
+    print("Select an account to use - or add an account [a]:")
+    print("-" * 30)
+    _names = list(_UID.keys())
+    for i, name in enumerate(_UID):
+        print(f"{i+1}. {name}")
+    print("-" * 30)
+    while True:
+        try:
+            i = input("Choice: ")
+            if i == "a":
+                raise InterruptedError("add account")
+            choice = int(i) - 1
+            if choice < 1 or choice > len(_names):
+                raise ValueError
+            break
+        except ValueError:
+            print("Invalid choice!")
+        except InterruptedError:
+            # add account
+            uid = (
+                input("please input a link to your spotify account: ")
+                .split("/")[-1]
+                .split("?")[0]
+            )
+            if not uid:
+                print("That is not a valid input")
+                print("-" * 30)
+                continue
+            # use spotifyapi to find user name
+            name = get_user_info(uid).name
+            # save
+            _UID[name] = uid
+            _names.append(name)
+            print("-" * 30)
+            # get the choice number
+            choice = len(_UID) - 1
+            break
+    print(_names, choice)
+    UID = _names[choice]
